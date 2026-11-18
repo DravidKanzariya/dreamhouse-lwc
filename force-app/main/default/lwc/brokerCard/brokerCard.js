@@ -7,21 +7,22 @@ import NAME_FIELD from '@salesforce/schema/Broker__c.Name';
 import PHONE_FIELD from '@salesforce/schema/Broker__c.Phone__c';
 import MOBILE_PHONE_FIELD from '@salesforce/schema/Broker__c.Mobile_Phone__c';
 import EMAIL_FIELD from '@salesforce/schema/Broker__c.Email__c';
+import TITLE_FIELD from '@salesforce/schema/Broker__c.Title__c';
 
-const PROPERTY_FIELDS = [BROKER_FIELD];
-const BROKER_FIELDS = [
+const FIELDS = [
     NAME_FIELD,
     PHONE_FIELD,
     MOBILE_PHONE_FIELD,
-    EMAIL_FIELD
+    EMAIL_FIELD,
+    TITLE_FIELD
 ];
 
 export default class BrokerCard extends NavigationMixin(LightningElement) {
     @api recordId;
 
-    brokerFields = BROKER_FIELDS;
+    brokerFields = FIELDS;
 
-    @wire(getRecord, { recordId: '$recordId', fields: PROPERTY_FIELDS })
+    @wire(getRecord, { recordId: '$recordId', fields: [BROKER_FIELD] })
     property;
 
     get brokerId() {
@@ -33,7 +34,7 @@ export default class BrokerCard extends NavigationMixin(LightningElement) {
             type: 'standard__recordPage',
             attributes: {
                 recordId: this.brokerId,
-                objectApiName: 'Property__c',
+                objectApiName: 'Broker__c',
                 actionName: 'view'
             }
         });
