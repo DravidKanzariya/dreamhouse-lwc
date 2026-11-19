@@ -1,11 +1,8 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Date_Pre_Market__c</fullName>
-    <externalId>false</externalId>
-    <label>Date Pre Market</label>
-    <required>false</required>
-    <trackFeedHistory>false</trackFeedHistory>
-    <trackHistory>false</trackHistory>
-    <trackTrending>false</trackTrending>
+    <label>Date Pre-Market</label>
+    <description>Date the property entered the Pre Market status. Stamped automatically by the Set_Pre_Market_Date flow. Add this field to the existing Property Layout.</description>
     <type>Date</type>
+    <required>false</required>
 </CustomField>
