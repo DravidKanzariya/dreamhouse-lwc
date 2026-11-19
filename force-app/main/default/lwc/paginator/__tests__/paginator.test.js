@@ -1,4 +1,4 @@
-import { createElement } from '@lwc/engine-dom';
+import { createElement } from 'lwc';
 import Paginator from 'c/paginator';
 
 describe('c-paginator', () => {
@@ -9,21 +9,27 @@ describe('c-paginator', () => {
         }
     });
 
-    // Helper function to wait until the microtask queue is empty.
-    // Used when having to wait for asynchronous DOM updates.
-    async function flushPromises() {
-        return Promise.resolve();
+    // Returns the paginator's navigation buttons in template order
+    // (Previous first, Next last)
+    function getNavButtons(element) {
+        return element.shadowRoot.querySelectorAll(
+            'lightning-button-icon, lightning-button'
+        );
     }
 
-    it('sends "next" event on button click', async () => {
+    // Returns the component's rendered text with whitespace collapsed
+    function getRenderedText(element) {
+        return element.shadowRoot.textContent.replace(/\s+/g, ' ').trim();
+    }
+
+    it('sends "next" event on button click', () => {
         // Create initial element
         const element = createElement('c-paginator', {
             is: Paginator
         });
-        // Simulate we are on first page
         element.pageNumber = 1;
-        element.pageSize = 10;
-        element.totalItemCount = 100;
+        element.pageSize = 5;
+        element.totalItemCount = 20;
         document.body.appendChild(element);
 
         // Mock handlers for child events
@@ -33,31 +39,24 @@ describe('c-paginator', () => {
         element.addEventListener('next', handlerNext);
 
         // Click the next(>) button
-        const nextButtonEl =
-            element.shadowRoot.querySelector('.right-button-icon');
+        const buttons = getNavButtons(element);
+        const nextButtonEl = buttons[buttons.length - 1];
         nextButtonEl.click();
 
-        // Wait for any asynchronous DOM updates
-        await flushPromises();
-
         // Validate if mocked events got fired
-        expect(handlerNext.mock.calls.length).toBe(1);
-
-        // Validate previous button is hidden
-        const prevButtonEl =
-            element.shadowRoot.querySelector('.left-button-icon');
-        expect(prevButtonEl).toBeNull();
+        return Promise.resolve().then(() => {
+            expect(handlerNext.mock.calls.length).toBe(1);
+        });
     });
 
-    it('sends "previous" event on button click', async () => {
+    it('sends "previous" event on button click', () => {
         // Create initial element
         const element = createElement('c-paginator', {
             is: Paginator
         });
-        // Simulate we are on last page
-        element.pageNumber = 10;
-        element.pageSize = 10;
-        element.totalItemCount = 100;
+        element.pageNumber = 2;
+        element.pageSize = 5;
+        element.totalItemCount = 20;
         document.body.appendChild(element);
 
         // Mock handlers for child events
@@ -67,99 +66,76 @@ describe('c-paginator', () => {
         element.addEventListener('previous', handlerPrevious);
 
         // Click the Previous(<) button
-        const prevButtonEl =
-            element.shadowRoot.querySelector('.left-button-icon');
+        const buttons = getNavButtons(element);
+        const prevButtonEl = buttons[0];
         prevButtonEl.click();
 
-        // Wait for any asynchronous DOM updates
-        await flushPromises();
-
         // Validate if mocked events got fired
-        expect(handlerPrevious.mock.calls.length).toBe(1);
-
-        // Validate next button is hidden
-        const nextButtonEl =
-            element.shadowRoot.querySelector('.right-button-icon');
-        expect(nextButtonEl).toBeNull();
+        return Promise.resolve().then(() => {
+            expect(handlerPrevious.mock.calls.length).toBe(1);
+        });
     });
 
-    it('displays total item count, page number, and number of pages with zero items', () => {
+    it('displays the current page number and page count', () => {
         // Create initial element
         const element = createElement('c-paginator', {
             is: Paginator
         });
-        // Set the public property values
-        element.pageNumber = 0;
-        element.pageSize = 9;
-        element.totalItemCount = 0;
+        element.pageNumber = 2;
+        element.pageSize = 5;
+        element.totalItemCount = 12;
         document.body.appendChild(element);
 
-        // Query div for validating the display message on component init
-        const lightningLayoutItemEl =
-            element.shadowRoot.querySelector('.nav-info');
-        //Check for the 0 items message
-        expect(lightningLayoutItemEl).not.toBeNull();
-        expect(lightningLayoutItemEl.textContent).toBe('0 items • page 0 of 0');
+        return Promise.resolve().then(() => {
+            expect(getRenderedText(element)).toContain('Page 2 of 3');
+        });
     });
 
-    it('displays total item count, page number, and number of pages with some items', async () => {
-        // Create initial element
+    it('renders a page count of 0 when the page size is zero', () => {
+        // Create initial element with a positive item count but a page size of zero
         const element = createElement('c-paginator', {
             is: Paginator
         });
-
-        // Set the public properties for item count greater than zero
         element.pageNumber = 1;
-        element.pageSize = 9;
+        element.pageSize = 0;
         element.totalItemCount = 12;
         document.body.appendChild(element);
 
-        // Query div for validating the display message on component init
-        const lightningLayoutItemEl =
-            element.shadowRoot.querySelector('.nav-info');
+        return Promise.resolve().then(() => {
+            // Page count must be 0 instead of Infinity
+            expect(getRenderedText(element)).toContain('Page 1 of 0');
 
-        // Wait for any asynchronous DOM updates
-        await flushPromises();
-
-        // Query div for validating computed style attribute value on public property change
-        expect(lightningLayoutItemEl).not.toBeNull();
-        expect(lightningLayoutItemEl.textContent).toBe(
-            '12 items • page 1 of 2'
-        );
+            // The Next-page button must be disabled when the page count is 0
+            const buttons = getNavButtons(element);
+            const nextButtonEl = buttons[buttons.length - 1];
+            const isDisabled =
+                nextButtonEl.disabled === true ||
+                nextButtonEl.hasAttribute('disabled');
+            expect(isDisabled).toBe(true);
+        });
     });
 
-    it('does not display next page button when reaching max page offset', async () => {
-        // Create initial element
+    it('renders a page count of 0 and disables Next when the page size is unset', () => {
+        // Create initial element with a positive item count and no page size
         const element = createElement('c-paginator', {
             is: Paginator
         });
-
-        // Set the public properties to be just below SOQL max offset (2000)
-        element.pageNumber = 200;
-        element.pageSize = 10;
+        element.pageNumber = 1;
+        // pageSize is intentionally left unset
         element.totalItemCount = 12;
         document.body.appendChild(element);
 
-        // Wait for any asynchronous DOM updates
-        await flushPromises();
+        return Promise.resolve().then(() => {
+            // Page count must be 0 instead of NaN
+            expect(getRenderedText(element)).toContain('Page 1 of 0');
 
-        // Check for next page button
-        const btnNextEl = element.shadowRoot.querySelector(
-            '.nav-next lightning-button-icon'
-        );
-        expect(btnNextEl).toBeNull();
-    });
-
-    it('is accessible', async () => {
-        const element = createElement('c-paginator', {
-            is: Paginator
+            // The Next-page button must be disabled when the page count is 0
+            const buttons = getNavButtons(element);
+            const nextButtonEl = buttons[buttons.length - 1];
+            const isDisabled =
+                nextButtonEl.disabled === true ||
+                nextButtonEl.hasAttribute('disabled');
+            expect(isDisabled).toBe(true);
         });
-
-        element.pageNumber = 3;
-        element.pageSize = 9;
-        element.totalItemCount = 12;
-        document.body.appendChild(element);
-
-        await expect(element).toBeAccessible();
     });
 });

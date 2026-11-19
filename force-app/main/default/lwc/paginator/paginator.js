@@ -1,7 +1,5 @@
 import { LightningElement, api } from 'lwc';
 
-const MAX_ITEM_OFFSET = 2000;
-
 export default class Paginator extends LightningElement {
     /** The current page number. */
     @api pageNumber;
@@ -24,18 +22,22 @@ export default class Paginator extends LightningElement {
         return this.totalItemCount === 0 ? 0 : this.pageNumber;
     }
 
-    get isNotFirstPage() {
-        return this.pageNumber > 1;
+    get isFirstPage() {
+        return this.pageNumber === 1;
     }
 
-    get isNotLastPage() {
-        return (
-            this.pageNumber < this.totalPages &&
-            this.pageNumber * this.pageSize < MAX_ITEM_OFFSET
-        );
+    get isLastPage() {
+        return this.pageNumber >= this.totalPages;
     }
 
     get totalPages() {
-        return Math.ceil(this.totalItemCount / this.pageSize);
+        const pageSize = Number(this.pageSize);
+        // Guard against page sizes that are not positive numbers
+        // (unset/undefined, null, NaN, zero, or negative). Dividing by such
+        // a value would produce NaN or Infinity, so the page count is 0.
+        if (!Number.isFinite(pageSize) || pageSize <= 0) {
+            return 0;
+        }
+        return Math.ceil(this.totalItemCount / pageSize);
     }
 }
