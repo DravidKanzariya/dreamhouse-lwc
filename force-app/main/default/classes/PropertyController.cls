@@ -22,13 +22,18 @@ public with sharing class PropertyController {
         Integer pageNumber
     ) {
         // Normalize inputs
-        Decimal safeMaxPrice = maxPrice ?? DEFAULT_MAX_PRICE;
-        Integer safeMinBedrooms = minBedrooms ?? 0;
-        Integer safeMinBathrooms = minBathrooms ?? 0;
-        Integer safePageSize = pageSize ?? DEFAULT_PAGE_SIZE;
-        Integer safePageNumber = pageNumber ?? 1;
+        Decimal safeMaxPrice = maxPrice == null ? DEFAULT_MAX_PRICE : maxPrice;
+        Integer safeMinBedrooms = minBedrooms == null ? 0 : minBedrooms;
+        Integer safeMinBathrooms = minBathrooms == null ? 0 : minBathrooms;
+        Integer safePageSize = pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
+        Integer safePageNumber = pageNumber == null ? 1 : pageNumber;
 
-        String searchPattern = '%' + searchKey + '%';
+        // Guard the search pattern: a null or blank search key must match all
+        // properties instead of building the literal pattern '%null%'. When a
+        // key is provided, keep the original '%key%' pattern unchanged.
+        String searchPattern = String.isBlank(searchKey)
+            ? '%%'
+            : '%' + searchKey + '%';
         Integer offset = (safePageNumber - 1) * safePageSize;
 
         PagedResult result = new PagedResult();
@@ -67,8 +72,8 @@ public with sharing class PropertyController {
                 AND Price__c <= :safeMaxPrice
                 AND Beds__c >= :safeMinBedrooms
                 AND Baths__c >= :safeMinBathrooms
-            WITH USER_MODE
-            ORDER BY Price__c
+            WITH SECURITY_ENFORCED
+            ORDER BY Name
             LIMIT :safePageSize
             OFFSET :offset
         ];
@@ -83,12 +88,12 @@ public with sharing class PropertyController {
     @AuraEnabled(cacheable=true scope='global')
     public static List<ContentVersion> getPictures(Id propertyId) {
         List<ContentDocumentLink> links = [
-            SELECT Id, LinkedEntityId, ContentDocument.Title
+            SELECT Id, LinkedEntityId, ContentDocumentId
             FROM ContentDocumentLink
             WHERE
                 LinkedEntityId = :propertyId
                 AND ContentDocument.FileType IN ('PNG', 'JPG', 'GIF')
-            WITH USER_MODE
+            WITH SECURITY_ENFORCED
         ];
 
         if (links.isEmpty()) {
@@ -105,7 +110,7 @@ public with sharing class PropertyController {
             SELECT Id, Title
             FROM ContentVersion
             WHERE ContentDocumentId IN :contentIds AND IsLatest = TRUE
-            WITH USER_MODE
+            WITH SECURITY_ENFORCED
             ORDER BY CreatedDate
         ];
     }
