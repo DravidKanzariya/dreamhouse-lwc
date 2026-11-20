@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Property__c</fullName>
+    <label>Property</label>
+    <type>Lookup</type>
+    <referenceTo>Property__c</referenceTo>
+    <relationshipName>Open_Houses</relationshipName>
+    <relationshipLabel>Open Houses</relationshipLabel>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Lookup to the Property this Open House is for. Add this field to the Open House page layout in Setup if a layout is created later.</description>
+</CustomField>
