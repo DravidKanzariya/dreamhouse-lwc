@@ -1,14 +1,28 @@
 import { LightningElement, api } from 'lwc';
-import FORM_FACTOR from '@salesforce/client/formFactor';
 import { NavigationMixin } from 'lightning/navigation';
+import FORM_FACTOR from '@salesforce/client/formFactor';
 
 export default class PropertyTile extends NavigationMixin(LightningElement) {
+    /// Property__c to display.
     @api property;
-    formFactor = FORM_FACTOR;
 
-    handlePropertySelected() {
-        if (FORM_FACTOR === 'Small') {
-            // In Phones, navigate to property record page directly
+    /// Whether the property has a price to display.
+    get hasPrice() {
+        return (
+            this.property !== undefined &&
+            this.property !== null &&
+            this.property.Price__c !== undefined &&
+            this.property.Price__c !== null
+        );
+    }
+
+    handleClick() {
+        if (FORM_FACTOR === 'Large') {
+            const selectedEvent = new CustomEvent('selected', {
+                detail: this.property.Id
+            });
+            this.dispatchEvent(selectedEvent);
+        } else {
             this[NavigationMixin.Navigate]({
                 type: 'standard__recordPage',
                 attributes: {
@@ -17,16 +31,6 @@ export default class PropertyTile extends NavigationMixin(LightningElement) {
                     actionName: 'view'
                 }
             });
-        } else {
-            // In other devices, send message to other cmps on the page
-            const selectedEvent = new CustomEvent('selected', {
-                detail: this.property.Id
-            });
-            this.dispatchEvent(selectedEvent);
         }
-    }
-
-    get backgroundImageStyle() {
-        return `background-image:url(${this.property.Thumbnail__c})`;
     }
 }

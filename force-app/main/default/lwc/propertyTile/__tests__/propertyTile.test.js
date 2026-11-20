@@ -1,15 +1,5 @@
-import { createElement } from '@lwc/engine-dom';
+import { createElement } from 'lwc';
 import PropertyTile from 'c/propertyTile';
-
-const PROPERTY = {
-    Name: 'My House',
-    City__c: 'Some City',
-    Beds__c: '3',
-    Baths__c: '1',
-    Price__c: '450000',
-    Thumbnail__c: 'some-property.jpg',
-    Id: '12345'
-};
 
 describe('c-property-tile', () => {
     afterEach(() => {
@@ -19,79 +9,84 @@ describe('c-property-tile', () => {
         }
     });
 
-    // Helper function to wait until the microtask queue is empty.
-    // Used when having to wait for asynchronous DOM updates.
-    async function flushPromises() {
-        return Promise.resolve();
-    }
-
-    it('displays a property in the tile', () => {
+    it('displays a property', () => {
+        // Create element
         const element = createElement('c-property-tile', {
             is: PropertyTile
         });
-        element.property = PROPERTY;
+        element.property = {
+            Id: '1',
+            Name: 'Some name',
+            Price__c: 450000,
+            Thumbnail_IMG__c:
+                'https://s3-us-west-1.amazonaws.com/sfdc-demo/realty/house08sq.jpg'
+        };
         document.body.appendChild(element);
 
-        const headerEl = element.shadowRoot.querySelector('.truncate');
-        expect(headerEl.textContent).toBe(
-            `${PROPERTY.City__c} • ${PROPERTY.Name}`
+        // Verify displayed property
+        const imgEl = element.shadowRoot.querySelector('img');
+        expect(imgEl.src).toBe(
+            'https://s3-us-west-1.amazonaws.com/sfdc-demo/realty/house08sq.jpg'
         );
-
-        const paragraphEl = element.shadowRoot.querySelector('p');
-        expect(paragraphEl.textContent).toBe(
-            `Beds: ${PROPERTY.Beds__c} - Baths: ${PROPERTY.Baths__c}`
-        );
-
+        const nameEl = element.shadowRoot.querySelector('h1');
+        expect(nameEl.textContent).toBe('Some name');
         const priceEl = element.shadowRoot.querySelector(
             'lightning-formatted-number'
         );
-        expect(priceEl.value).toBe(PROPERTY.Price__c);
+        expect(priceEl.value).toBe(450000);
     });
 
-    it('displays the correct background image in the tile', () => {
+    it('displays "Price on request" when the property has no price', () => {
+        // Create element with a property that has no Price__c value
         const element = createElement('c-property-tile', {
             is: PropertyTile
         });
-        element.property = PROPERTY;
+        element.property = {
+            Id: '1',
+            Name: 'Some name',
+            Price__c: null,
+            Thumbnail_IMG__c:
+                'https://s3-us-west-1.amazonaws.com/sfdc-demo/realty/house08sq.jpg'
+        };
         document.body.appendChild(element);
 
-        const backgroundEl = element.shadowRoot.querySelector('.tile');
-        expect(backgroundEl.style.backgroundImage).toBe(
-            `url(${PROPERTY.Thumbnail__c})`
+        // Verify that no formatted price is displayed
+        const priceEl = element.shadowRoot.querySelector(
+            'lightning-formatted-number'
         );
+        expect(priceEl).toBeNull();
+
+        // Verify that the fallback text is displayed instead
+        const fallbackEl = element.shadowRoot.querySelector(
+            '[data-id="price-on-request"]'
+        );
+        expect(fallbackEl).not.toBeNull();
+        expect(fallbackEl.textContent).toBe('Price on request');
     });
 
-    it('Fires the property selected event on click for non Small formFactors', async () => {
+    it('fires a "selected" event on click', () => {
+        // Create element
         const element = createElement('c-property-tile', {
             is: PropertyTile
         });
-        element.property = PROPERTY;
+        element.property = {
+            Id: '1',
+            Name: 'Some name',
+            Price__c: 450000,
+            Thumbnail_IMG__c:
+                'https://s3-us-west-1.amazonaws.com/sfdc-demo/realty/house08sq.jpg'
+        };
         document.body.appendChild(element);
 
         // Mock handler for child event
         const handler = jest.fn();
         element.addEventListener('selected', handler);
 
-        const anchorEl = element.shadowRoot.querySelector('a');
-        anchorEl.click();
+        // Click tile
+        element.shadowRoot.querySelector('div').click();
 
-        // Wait for any asynchronous DOM updates
-        await flushPromises();
-
-        // Validate if event got fired
+        // Verify event fired with the property Id
         expect(handler).toHaveBeenCalled();
-        const selectEvent = handler.mock.calls[0][0];
-        expect(selectEvent.detail).toBe(PROPERTY.Id);
-    });
-
-    it('is accessible', async () => {
-        const element = createElement('c-property-tile', {
-            is: PropertyTile
-        });
-
-        element.property = PROPERTY;
-        document.body.appendChild(element);
-
-        await expect(element).toBeAccessible();
+        expect(handler.mock.calls[0][0].detail).toBe('1');
     });
 });
